@@ -15,12 +15,16 @@ class BasePublisher(AMQPConnector):
         self._message_number = 0
 
     def mark_message(self, message):
-        """Method called when a message has been published or consumed"""
+        """Method called when a message has been published"""
         raise NotImplementedError('mark_message method must be implemented')
 
     def add_messages(self):
         """Method called to verify if there is new messages to publish"""
         raise NotImplementedError('messages_batch method must be implemented')
+
+    def transform_message(self, message):
+        """Method called before a message will be published"""
+        return message
 
     def on_bind(self, response_frame):
         """Called when the queue is ready to received messages"""
@@ -36,7 +40,7 @@ class BasePublisher(AMQPConnector):
             return
 
         message = self._messages.pop(0)
-        body = cPickle.dumps(message)
+        body = cPickle.dumps(self.transform_message(message))
         self._message_number += 1
         self._channel.basic_publish(self.exchange, self.routing_key, body)
         self.mark_message(message)
