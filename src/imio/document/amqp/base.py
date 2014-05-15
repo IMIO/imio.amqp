@@ -100,6 +100,11 @@ class AMQPConnector(object):
 
     def on_exchange_declared(self, response_frame):
         """Called when RabbitMQ has finished the exchange declare"""
+        self._channel.queue_declare(self.on_queue_declared, self.queue,
+                                    durable=True)
+
+    def on_queue_declared(self, method_frame):
+        """Called when a queue has been configured"""
         self._channel.queue_bind(self.on_bind, self.queue, self.exchange,
                                  self.routing_key)
 
