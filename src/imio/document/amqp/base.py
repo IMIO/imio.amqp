@@ -62,6 +62,7 @@ class AMQPConnector(object):
     def on_connection_open(self, connection):
         """Called when the connection to RabbitMQ is established"""
         self._logger.info('Connection opened')
+        self._connection.add_on_close_callback(self.on_connection_closed)
         self.open_channel()
 
     def reconnect(self):
