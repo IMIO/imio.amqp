@@ -49,7 +49,7 @@ class AMQPConnector(object):
         self._logger.addHandler(fh)
 
     def connect(self):
-        """Open an return the connection to RabbitMQ"""
+        """Open and return the connection to RabbitMQ"""
         self._logger.info('Connecting to {0!s}'.format(self._url))
         return pika.SelectConnection(pika.URLParameters(self._url),
                                      self.on_connection_open)
@@ -109,7 +109,7 @@ class AMQPConnector(object):
                                  self.routing_key)
 
     def on_bind(self, response_frame):
-        """Called when the queue is ready to received messages"""
+        """Called when the queue is ready to received or consumed messages"""
         raise NotImplementedError('on_bind method must be implemented')
 
     def start_publishing(self):
