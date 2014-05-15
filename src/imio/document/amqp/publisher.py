@@ -24,7 +24,7 @@ class BasePublisher(AMQPConnector):
 
     def mark_message(self, message):
         """Method called when a message has been published"""
-        raise NotImplementedError('mark_message method must be implemented')
+        pass
 
     def add_messages(self):
         """Method called to verify if there is new messages to publish"""
