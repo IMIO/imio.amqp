@@ -61,17 +61,21 @@ class BasePublisher(AMQPConnector):
                                          routing_key)
 
     def _publish(self):
-        """Publish a message"""
+        """Publish a message from the message list"""
         if self._closing is True:
             return
         message = self._messages.pop(0)
+        self.publish(message)
+        self.schedule_next_message()
+
+    def publish(self, message):
+        """Publish a message"""
         routing_key = self.get_routing_key(message)
         body = cPickle.dumps(self.transform_message(message))
         self._message_number += 1
         self._channel.basic_publish(self.exchange, routing_key, body)
         self.mark_message(message)
         self._logger.info('Published message #%d' % self._message_number)
-        self.schedule_next_message()
 
     def _add_messages(self):
         self._messages.extend(self.add_messages())
