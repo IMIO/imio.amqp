@@ -25,6 +25,16 @@ class AMQPConnector(object):
         if logging is True:
             self._set_logger()
 
+    def setup_queue(self, queue_name, routing_key):
+        """Setup the queue"""
+        self.queue = queue_name
+        self.routing_key = routing_key
+
+    def setup_exchange(self, exchange_name, exchange_type):
+        """Setup the exchange"""
+        self.exchange = exchange_name
+        self.exchange_type = exchange_type
+
     def _set_logger(self):
         """Set logging"""
         self._logger = logging.getLogger(self.logger_name)
@@ -96,6 +106,12 @@ class AMQPConnector(object):
     def on_bind(self, response_frame):
         """Called when the queue is ready to received messages"""
         raise NotImplementedError('on_bind method must be implemented')
+
+    def start_publishing(self):
+        """Hook for publishing the messages"""
+
+    def start_consuming(self):
+        """Hook for consuming the messages"""
 
     def close_channel(self):
         """Close the channel with RabbitMQ"""
