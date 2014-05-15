@@ -15,14 +15,15 @@ class AMQPConnector(object):
     logger_name = None
     log_file = None
 
-    def __init__(self, amqp_url):
+    def __init__(self, amqp_url, logging=True):
         self._url = amqp_url
 
         self._connection = None
         self._channel = None
         self._closing = False
 
-        self._set_logger()
+        if logging is True:
+            self._set_logger()
 
     def _set_logger(self):
         """Set logging"""
