@@ -96,7 +96,8 @@ class AMQPConnector(object):
         self._channel.add_on_close_callback(self.on_channel_closed)
         self._channel.exchange_declare(self.on_exchange_declared,
                                        self.exchange,
-                                       self.exchange_type)
+                                       self.exchange_type,
+                                       durable=True)
 
     def on_exchange_declared(self, response_frame):
         """Called when RabbitMQ has finished the exchange declare"""
