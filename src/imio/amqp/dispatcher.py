@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from imio.document.amqp.base import AMQPConnector
+from imio.amqp.base import AMQPConnector
 
 
 def schedule_next_message(self):

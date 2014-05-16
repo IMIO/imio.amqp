@@ -9,7 +9,7 @@ long_description = (
     + '\n')
 
 setup(
-    name='imio.document.amqp',
+    name='imio.amqp',
     version=version,
     description="",
     long_description=long_description,
@@ -25,7 +25,7 @@ setup(
     license='GPL',
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    namespace_packages=['imio', 'imio.document'],
+    namespace_packages=['imio'],
     include_package_data=True,
     zip_safe=False,
     install_requires=[

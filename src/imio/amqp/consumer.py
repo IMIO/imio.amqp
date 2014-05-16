@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import cPickle
 
-from imio.document.amqp.base import AMQPConnector
+from imio.amqp.base import AMQPConnector
 
 
 class BaseConsumer(AMQPConnector):
