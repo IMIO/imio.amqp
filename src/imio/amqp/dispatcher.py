@@ -11,10 +11,14 @@ class BaseDispatcher(AMQPConnector):
     logger_name = None
     log_file = None
 
-    def __init__(self, consumer_class, publisher_class, amqp_url):
+    def __init__(
+        self, consumer_class, publisher_class, amqp_url, logging=True,
+    ):
         self._url = amqp_url
+        self.logging = logging
 
-        self._set_logger()
+        if self.logging is True:
+            self._set_logger()
         self._set_publisher(publisher_class)
         self._set_consumer(consumer_class)
 
@@ -23,17 +27,20 @@ class BaseDispatcher(AMQPConnector):
         cls.log_file = self.log_file
         cls.schedule_next_message = schedule_next_message
         self.publisher = cls(self._url, logging=False)
-        self.publisher._logger = self._logger
+        if self.logging is True:
+            self.publisher._logger = self._logger
 
     def _set_consumer(self, cls):
         cls.logger_name = self.logger_name
         cls.log_file = self.log_file
         self.consumer = cls(self._url, logging=False)
         self.consumer.publisher = self.publisher
-        self.consumer._logger = self._logger
+        if self.logging is True:
+            self.consumer._logger = self._logger
 
     def on_connection_open(self, connection):
         self._log('Connection opened')
+        self.after_connection_open()
         self._connection.add_on_close_callback(self.on_connection_closed)
         self.consumer._connection = self._connection
         self.publisher._connection = self._connection
