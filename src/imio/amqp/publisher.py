@@ -75,7 +75,7 @@ class BasePublisher(AMQPConnector):
         self._message_number += 1
         self._channel.basic_publish(self.exchange, routing_key, body)
         self.mark_message(message)
-        self._logger.info('Published message #%d' % self._message_number)
+        self._log('Published message #%d' % self._message_number)
 
     def _add_messages(self):
         self._messages.extend(self.add_messages())
@@ -83,7 +83,7 @@ class BasePublisher(AMQPConnector):
 
     def start_publishing(self):
         """Begin the publishing of messages"""
-        self._logger.info('Begin the publishing of messages')
+        self._log('Begin the publishing of messages')
         self.schedule_next_message()
 
     def schedule_next_message(self):
@@ -99,13 +99,13 @@ class BasePublisher(AMQPConnector):
 
     def stop(self):
         """Stop the publishing process"""
-        self._logger.info('Stopping')
+        self._log('Stopping')
         self._closing = True
         self.close_channel()
         self.close_connection()
         # Allow the publisher to cleanly disconnect from RabbitMQ
         self._connection.ioloop.start()
-        self._logger.info('Stopped')
+        self._log('Stopped')
 
     def on_bind(self, response_frame):
         """Called when the queue is ready to received messages"""

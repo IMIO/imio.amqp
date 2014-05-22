@@ -12,7 +12,7 @@ class BaseConsumer(AMQPConnector):
 
     def start_consuming(self):
         """Begin the consuming of messages"""
-        self._logger.info('Begin the consuming of messages')
+        self._log('Begin the consuming of messages')
         self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
         self._consumer_tag = self._channel.basic_consume(self.on_message,
                                                          self.queue)
@@ -20,32 +20,32 @@ class BaseConsumer(AMQPConnector):
     def on_consumer_cancelled(self, method_frame):
         """Invoked by pika when RabbitMQ sends a Basic.Cancel for a consumer
         receiving messages."""
-        self._logger.info('Consumer was cancelled remotely, shutting down: '
-                          '{0!r}'.format(method_frame))
+        self._log('Consumer was cancelled remotely, shutting down: '
+                  '{0!r}'.format(method_frame))
         if self._channel:
             self._channel.close()
 
     def on_message(self, channel, basic_deliver, properties, body):
         """Consumed a message"""
-        self._logger.info('Received message #{0!s} from {0!s}: {0!s}'.format(
+        self._log('Received message #{0!s} from {0!s}: {0!s}'.format(
             basic_deliver.delivery_tag, properties.app_id, body))
         self.treat_message(cPickle.loads(body))
         self.acknowledge_message(basic_deliver.delivery_tag)
 
     def acknowledge_message(self, delivery_tag):
         """Acknowledged a message"""
-        self._logger.info('Acknowledging message {0!s}'.format(delivery_tag))
+        self._log('Acknowledging message {0!s}'.format(delivery_tag))
         self._channel.basic_ack(delivery_tag)
 
     def stop(self):
         """Stop consuming messages"""
-        self._logger.info('Stopping')
+        self._log('Stopping')
         self._closing = True
         if self._channel:
             self._channel.basic_cancel(self.on_cancel, self._consumer_tag)
         # Allow the consumer to cleanly disconnect from RabbitMQ
         self._connection.ioloop.start()
-        self._logger.info('Stopped')
+        self._log('Stopped')
 
     def on_bind(self, response_frame):
         """Called when the queue is ready to consumed messages"""

@@ -33,7 +33,7 @@ class BaseDispatcher(AMQPConnector):
         self.consumer._logger = self._logger
 
     def on_connection_open(self, connection):
-        self._logger.info('Connection opened')
+        self._log('Connection opened')
         self._connection.add_on_close_callback(self.on_connection_closed)
         self.consumer._connection = self._connection
         self.publisher._connection = self._connection
@@ -42,7 +42,7 @@ class BaseDispatcher(AMQPConnector):
 
     def stop(self):
         """Stop the process"""
-        self._logger.info('Stopping')
+        self._log('Stopping')
         self.consumer._closing = True
         self.publisher._closing = True
         self.publisher.close_channel()
@@ -51,4 +51,4 @@ class BaseDispatcher(AMQPConnector):
                                                 self.consumer._consumer_tag)
         # Allow the process to cleanly disconnect from RabbitMQ
         self._connection.ioloop.start()
-        self._logger.info('Stopped')
+        self._log('Stopped')
