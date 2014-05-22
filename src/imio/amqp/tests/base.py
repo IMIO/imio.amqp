@@ -86,28 +86,31 @@ class RabbitMQManager(object):
 
     @property
     def vhosts(self):
-        out = self._exec('list', 'vhosts')
+        out = self._exec('list', 'vhosts', 'name')
         vhosts = []
-        for line in out.splitlines()[3:-1]:
-            vhosts.append([e.strip() for e in line.split('|')][1])
+        for line in self._parse_listing(out):
+            vhosts.append(line[1])
         return vhosts
 
     @property
     def exchanges(self):
-        out = self._exec('list', 'exchanges')
+        out = self._exec('list', 'exchanges', 'vhost', 'name')
         exchanges = []
-        for line in out.splitlines()[3:-1]:
-            elements = [e.strip() for e in line.split('|')]
-            exchanges.append('{0} ({1})'.format(elements[2].strip(),
-                                                elements[1].strip()))
+        for line in self._parse_listing(out):
+            exchanges.append('{0} ({1})'.format(line[2].strip(),
+                                                line[1].strip()))
         return exchanges
 
     @property
     def queues(self):
-        out = self._exec('list', 'queues')
+        out = self._exec('list', 'queues', 'vhost', 'name')
         queues = []
-        for line in out.splitlines()[3:-1]:
-            elements = [e.strip() for e in line.split('|')]
-            queues.append('{0} ({1})'.format(elements[2].strip(),
-                                             elements[1].strip()))
+        for line in self._parse_listing(out):
+            queues.append('{0} ({1})'.format(line[2].strip(),
+                                             line[1].strip()))
         return queues
+
+    @staticmethod
+    def _parse_listing(result):
+        return [[e.strip() for e in l.split('|')]
+                for l in result.splitlines()[3:-1]]
