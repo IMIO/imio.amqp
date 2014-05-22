@@ -32,6 +32,10 @@ setup(
         'setuptools',
         'pika',
     ],
+    extras_require=dict(
+        test=[
+            'mock',
+        ]),
     entry_points="""
     # -*- Entry points: -*-
     """,
