@@ -69,16 +69,22 @@ class RabbitMQManager(object):
                    'write={0}'.format(write), 'read={0}'.format(read))
 
     def delete_vhost(self, name):
-        self._exec('delete', 'vhost', 'name={0}'.format(name))
-        self.declared_vhosts.remove(name)
+        if name in self.vhosts:
+            self._exec('delete', 'vhost', 'name={0}'.format(name))
+        if name in self.declared_vhosts:
+            self.declared_vhosts.remove(name)
 
     def delete_exchange(self, name):
-        self._exec('delete', 'exchange', 'name={0}'.format(name))
-        self.declared_exchanges.remove(name)
+        if name in self.exchanges:
+            self._exec('delete', 'exchange', 'name={0}'.format(name))
+        if name in self.declared_exchanges:
+            self.declared_exchanges.remove(name)
 
     def delete_queue(self, name):
-        self._exec('delete', 'queue', 'name={0}'.format(name))
-        self.declared_queues.remove(name)
+        if name in self.queues:
+            self._exec('delete', 'queue', 'name={0}'.format(name))
+        if name in self.declared_queues:
+            self.declared_queues.remove(name)
 
     def delete_user(self, name):
         self._exec('delete', 'user', 'name={0}'.format(name))
@@ -94,20 +100,18 @@ class RabbitMQManager(object):
 
     @property
     def exchanges(self):
-        out = self._exec('list', 'exchanges', 'vhost', 'name')
+        out = self._exec('list', 'exchanges', 'name')
         exchanges = []
         for line in self._parse_listing(out):
-            exchanges.append('{0} ({1})'.format(line[2].strip(),
-                                                line[1].strip()))
+            exchanges.append(line[1])
         return exchanges
 
     @property
     def queues(self):
-        out = self._exec('list', 'queues', 'vhost', 'name')
+        out = self._exec('list', 'queues', 'name')
         queues = []
         for line in self._parse_listing(out):
-            queues.append('{0} ({1})'.format(line[2].strip(),
-                                             line[1].strip()))
+            queues.append(line[1])
         return queues
 
     @staticmethod
