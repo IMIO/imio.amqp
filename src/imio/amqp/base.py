@@ -78,8 +78,12 @@ class AMQPConnector(object):
     def on_connection_open(self, connection):
         """Called when the connection to RabbitMQ is established"""
         self._log('Connection opened')
+        self.after_connection_open()
         self._connection.add_on_close_callback(self.on_connection_closed)
         self.open_channel()
+
+    def after_connection_open(self):
+        """Hook called when the connection to RabbitMQ is established"""
 
     def reconnect(self):
         """Called by IOLoop timer if the connection is closed"""
