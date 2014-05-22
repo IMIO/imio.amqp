@@ -5,7 +5,7 @@ import unittest
 
 
 class TestConsumer(BaseConsumer):
-    queue = 'imio.amqp.testqueue'
+    queue = 'imio.amqp.conqueue'
     exchange = 'imio.amqp.test'
     routing_key = 'AA'
 
@@ -22,13 +22,10 @@ class TestBaseConsumer(unittest.TestCase):
 
     def setUp(self):
         self._amqp = RabbitMQManager()
-        self._amqp.declare_vhost('/test-vhost')
         self._amqp.declare_exchange('imio.amqp.test', 'direct', durable='true')
-        self._amqp.declare_queue('imio.amqp.testqueue', durable='true')
-        self._amqp.declare_bind('imio.amqp.test', 'imio.amqp.testqueue',
+        self._amqp.declare_queue('imio.amqp.conqueue', durable='true')
+        self._amqp.declare_bind('imio.amqp.test', 'imio.amqp.conqueue',
                                 routing_key='AA')
-        self._amqp.declare_user('john', 'foobar')
-        self._amqp.declare_permission('/test-vhost', 'john')
 
         connection = ('amqp://guest:guest@127.0.0.1:5672/%2F?'
                       'connection_attempts=3&heartbeat_interval=3600')
