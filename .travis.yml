@@ -3,6 +3,10 @@ python:
   - 2.7
 services:
   - rabbitmq
+before_script:
+  - sudo rabbitmq-plugins enable rabbitmq_management
+  - wget http://guest:guest@localhost:15672/cli/rabbitmqadmin
+  - chmod +x rabbitmqadmin
 install:
   - python bootstrap.py
   - bin/buildout -N -q -t 3
