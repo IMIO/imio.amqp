@@ -118,3 +118,14 @@ class RabbitMQManager(object):
     def _parse_listing(result):
         return [[e.strip() for e in l.split('|')]
                 for l in result.splitlines()[3:-1]]
+
+    def messages_number(self, queue):
+        """Return the number of messages in a queue"""
+        out = self._exec('list', 'queues', 'name', 'messages')
+        for line in self._parse_listing(out):
+            if line[1] == queue:
+                try:
+                    return int(line[2])
+                except:
+                    break
+        return 0
