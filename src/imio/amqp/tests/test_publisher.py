@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from imio.amqp.tests.base import RabbitMQManager
 from imio.amqp.publisher import BasePublisher
+
 import unittest
 
 
@@ -59,7 +60,7 @@ class TestBasePublisher(unittest.TestCase):
         self._publisher.setup_queue('imio.amqp.pub1queue', 'AA')
         self._publisher.setup_queue('imio.amqp.pub2queue', 'BB')
         self._publisher._messages = ['A', 'B']
-        self._publisher.stop_timeout = 3
+        self._publisher.stop_timeout = 4
         self._publisher.start()
         self.assertEqual(1, self._amqp.messages_number('imio.amqp.pub1queue'))
         self.assertEqual(1, self._amqp.messages_number('imio.amqp.pub2queue'))
