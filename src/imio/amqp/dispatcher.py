@@ -2,11 +2,17 @@
 
 from imio.amqp.base import AMQPConnector
 from imio.amqp.event import ConnectionOpenedEvent
+from imio.amqp.event import PublisherReadyEvent
+from imio.amqp.event import add_subscriber
 from imio.amqp.event import notify
 
 
 def schedule_next_message(self):
     pass
+
+
+def publisher_ready(event):
+    event.context.consumer.open_channel()
 
 
 class BaseDispatcher(AMQPConnector):
@@ -24,6 +30,9 @@ class BaseDispatcher(AMQPConnector):
         self._set_publisher(publisher_class)
         self._set_consumer(consumer_class)
 
+        self.publisher.consumer = self.consumer
+        self.consumer.publisher = self.publisher
+
     def _set_publisher(self, cls):
         cls.logger_name = self.logger_name
         cls.log_file = self.log_file
@@ -36,7 +45,6 @@ class BaseDispatcher(AMQPConnector):
         cls.logger_name = self.logger_name
         cls.log_file = self.log_file
         self.consumer = cls(self._url, logging=False)
-        self.consumer.publisher = self.publisher
         if self.logging is True:
             self.consumer._logger = self._logger
 
@@ -46,7 +54,7 @@ class BaseDispatcher(AMQPConnector):
         self._connection.add_on_close_callback(self.on_connection_closed)
         self.consumer._connection = self._connection
         self.publisher._connection = self._connection
-        self.consumer.open_channel()
+        add_subscriber(PublisherReadyEvent, publisher_ready)
         self.publisher.open_channel()
 
     def stop(self):
