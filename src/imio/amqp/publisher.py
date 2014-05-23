@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-import cPickle
 
 from imio.amqp.base import AMQPConnector
+from imio.amqp.event import PublisherReadyEvent
+from imio.amqp.event import notify
+
+import cPickle
 
 
 class BasePublisher(AMQPConnector):
@@ -111,4 +114,5 @@ class BasePublisher(AMQPConnector):
         """Called when the queue is ready to received messages"""
         self._binded_queues += 1
         if self._binded_queues == len(self._queues):
+            notify(PublisherReadyEvent(self))
             self.start_publishing()

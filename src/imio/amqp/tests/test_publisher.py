@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
-from imio.amqp.tests.base import RabbitMQManager
+
+from imio.amqp.event import ConnectionOpenedEvent
+from imio.amqp.event import add_subscriber
+from imio.amqp.event import remove_subscriber
 from imio.amqp.publisher import BasePublisher
+from imio.amqp.tests.base import RabbitMQManager
 
 import unittest
 
@@ -17,14 +21,16 @@ class TestPublisher(BasePublisher):
     def stop_timeout(self, value):
         self._stop_timeout = value
 
-    def after_connection_open(self):
-        self._connection.add_timeout(self.stop_timeout, self.stop)
-
     def add_messages(self):
         return ['B', 'B', 'B']
 
     def get_routing_key(self, message):
         return {'A': 'AA', 'B': 'BB'}.get(message, 'AA')
+
+
+def after_connection_open(event):
+    event.context._connection.add_timeout(event.context.stop_timeout,
+                                          event.context.stop)
 
 
 class TestBasePublisher(unittest.TestCase):
@@ -36,8 +42,10 @@ class TestBasePublisher(unittest.TestCase):
         connection = ('amqp://guest:guest@127.0.0.1:5672/%2F?'
                       'connection_attempts=3&heartbeat_interval=3600')
         self._publisher = TestPublisher(connection, logging=False)
+        add_subscriber(ConnectionOpenedEvent, after_connection_open)
 
     def tearDown(self):
+        remove_subscriber(ConnectionOpenedEvent, after_connection_open)
         self._amqp.delete_queue('imio.amqp.pub1queue')
         self._amqp.delete_queue('imio.amqp.pub2queue')
         self._amqp.cleanup()

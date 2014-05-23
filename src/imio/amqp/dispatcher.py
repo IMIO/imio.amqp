@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from imio.amqp.base import AMQPConnector
+from imio.amqp.event import ConnectionOpenedEvent
+from imio.amqp.event import notify
 
 
 def schedule_next_message(self):
@@ -40,7 +42,7 @@ class BaseDispatcher(AMQPConnector):
 
     def on_connection_open(self, connection):
         self._log('Connection opened')
-        self.after_connection_open()
+        notify(ConnectionOpenedEvent(self))
         self._connection.add_on_close_callback(self.on_connection_closed)
         self.consumer._connection = self._connection
         self.publisher._connection = self._connection

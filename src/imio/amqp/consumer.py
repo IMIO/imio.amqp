@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-import cPickle
 
 from imio.amqp.base import AMQPConnector
+from imio.amqp.event import ConsumerReadyEvent
+from imio.amqp.event import notify
+
+import cPickle
 
 
 class BaseConsumer(AMQPConnector):
@@ -50,6 +53,7 @@ class BaseConsumer(AMQPConnector):
     def on_bind(self, response_frame):
         """Called when the queue is ready to consumed messages"""
         self.start_consuming()
+        notify(ConsumerReadyEvent(self))
 
     def on_cancel(self, frame):
         """Stop the connection and the channel"""
