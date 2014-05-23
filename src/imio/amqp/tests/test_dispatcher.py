@@ -93,3 +93,12 @@ class TestBaseDispatcher(unittest.TestCase):
 
         self._dispatcher.start()
         self.assertEqual(2, self._amqp.messages_number('imio.amqp.pub1queue'))
+
+    def test_publish_on_missing_queue(self):
+        self._dispatcher.publisher.setup_queue('imio.amqp.pub1queue', 'AA')
+        self._dispatcher.stop_timeout = 8
+        add_subscriber(ConnectionOpenedEvent, after_connection_open_publish)
+
+        self._dispatcher.start()
+        self.assertEqual(2, self._amqp.messages_number('imio.amqp.pub1queue'))
+        self.assertEqual(3, self._amqp.messages_number('imio.amqp.conqueue'))
