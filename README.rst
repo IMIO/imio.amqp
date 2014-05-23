@@ -9,7 +9,7 @@ Requirements
 
 * RabbitMQ
 * RabbitMQ Management plugin
-* rabbitmqamdin cli
+* rabbitmqadmin cli
 
 
 Tests
