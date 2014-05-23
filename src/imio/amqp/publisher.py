@@ -81,7 +81,8 @@ class BasePublisher(AMQPConnector):
         """Publish a message"""
         routing_key = self.get_routing_key(message)
         if routing_key not in self.routing_keys:
-            raise PublishException('Unknown routing key')
+            raise PublishException(
+                'Unknown routing key {0}'.format(routing_key))
         body = cPickle.dumps(self.transform_message(message))
         self._message_number += 1
         self._channel.basic_publish(self.exchange, routing_key, body,
