@@ -32,8 +32,11 @@ class BaseConsumer(AMQPConnector):
         """Consumed a message"""
         self._log('Received message #{0!s} from {0!s}: {0!s}'.format(
             basic_deliver.delivery_tag, properties.app_id, body))
-        self.treat_message(cPickle.loads(body))
-        self.acknowledge_message(basic_deliver.delivery_tag)
+        try:
+            self.treat_message(cPickle.loads(body))
+            self.acknowledge_message(basic_deliver.delivery_tag)
+        except Exception:
+            self._log('Error during treatment', type='warning')
 
     def acknowledge_message(self, delivery_tag):
         """Acknowledged a message"""

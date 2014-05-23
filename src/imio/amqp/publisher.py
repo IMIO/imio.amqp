@@ -3,6 +3,7 @@
 from imio.amqp.base import AMQPConnector
 from imio.amqp.event import PublisherReadyEvent
 from imio.amqp.event import notify
+from imio.amqp.exception import PublishException
 
 import cPickle
 
@@ -47,6 +48,11 @@ class BasePublisher(AMQPConnector):
         raise NotImplementedError('If multiple queues are defined, the '
                                   'get_routing_key method must be overrided')
 
+    @property
+    def routing_keys(self):
+        """Return the list of declared routing keys"""
+        return [q[1] for q in self._queues]
+
     def on_exchange_declared(self, response_frame):
         """Called when RabbitMQ has finished the exchange declare"""
         if len(self._queues) == 0:
@@ -74,11 +80,13 @@ class BasePublisher(AMQPConnector):
     def publish(self, message):
         """Publish a message"""
         routing_key = self.get_routing_key(message)
+        if routing_key not in self.routing_keys:
+            raise PublishException('Unknown routing key')
         body = cPickle.dumps(self.transform_message(message))
         self._message_number += 1
-        self._channel.basic_publish(self.exchange, routing_key, body)
+        self._channel.basic_publish(self.exchange, routing_key, body,
+                                    mandatory=True)
         self.mark_message(message)
-        self._log('Published message #%d' % self._message_number)
 
     def _add_messages(self):
         self._messages.extend(self.add_messages())
@@ -116,3 +124,14 @@ class BasePublisher(AMQPConnector):
         if self._binded_queues == len(self._queues):
             notify(PublisherReadyEvent(self))
             self.start_publishing()
+
+    def on_channel_open(self, channel):
+        super(BasePublisher, self).on_channel_open(channel)
+        self._channel.confirm_delivery(self.on_delivery_confirmation)
+
+    def on_delivery_confirmation(self, method_frame):
+        confirmation_type = method_frame.method.NAME.split('.')[1].lower()
+        if confirmation_type == 'ack':
+            self._log('Published message #%d' % self._message_number)
+        elif confirmation_type == 'nack':
+            self._log('Unacknowledged message #%d' % self._message_number)
