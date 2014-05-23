@@ -11,11 +11,11 @@ import unittest
 
 class TestPublisher(BasePublisher):
     exchange = 'imio.amqp.test'
-    batch_interval = 6
+    batch_interval = 8
 
     @property
     def stop_timeout(self):
-        return getattr(self, '_stop_timeout', 2)
+        return getattr(self, '_stop_timeout', 4)
 
     @stop_timeout.setter
     def stop_timeout(self, value):
@@ -60,7 +60,7 @@ class TestBasePublisher(unittest.TestCase):
     def test_single_publisher(self):
         self._publisher.setup_queue('imio.amqp.pub1queue', 'AA')
         self._publisher._messages = ['A', 'A']
-        self._publisher.stop_timeout = 4
+        self._publisher.stop_timeout = 6
         self._publisher.start()
         self.assertEqual(2, self._amqp.messages_number('imio.amqp.pub1queue'))
 
@@ -68,13 +68,13 @@ class TestBasePublisher(unittest.TestCase):
         self._publisher.setup_queue('imio.amqp.pub1queue', 'AA')
         self._publisher.setup_queue('imio.amqp.pub2queue', 'BB')
         self._publisher._messages = ['A', 'B']
-        self._publisher.stop_timeout = 4
+        self._publisher.stop_timeout = 6
         self._publisher.start()
         self.assertEqual(1, self._amqp.messages_number('imio.amqp.pub1queue'))
         self.assertEqual(1, self._amqp.messages_number('imio.amqp.pub2queue'))
 
     def test_add_message(self):
         self._publisher.setup_queue('imio.amqp.pub2queue', 'BB')
-        self._publisher.stop_timeout = 10
+        self._publisher.stop_timeout = 12
         self._publisher.start()
         self.assertEqual(3, self._amqp.messages_number('imio.amqp.pub2queue'))

@@ -21,7 +21,7 @@ class TestConsumer(BaseConsumer):
 
 
 def after_connection_open(event):
-    event.context._connection.add_timeout(2, event.context.stop)
+    event.context._connection.add_timeout(4, event.context.stop)
 
 
 class TestBaseConsumer(unittest.TestCase):
