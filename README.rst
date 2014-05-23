@@ -4,6 +4,14 @@ Introduction
 ============
 
 
+Requirements
+============
+
+* RabbitMQ
+* RabbitMQ Management plugin
+* rabbitmqamdin cli
+
+
 Tests
 =====
 
