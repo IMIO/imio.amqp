@@ -4,6 +4,7 @@ from imio.amqp.event import ConnectionOpenedEvent
 from imio.amqp.event import add_subscriber
 from imio.amqp.event import remove_subscriber
 from imio.amqp.publisher import BasePublisher
+from imio.amqp.publisher import BaseSingleMessagePublisher
 from imio.amqp.tests.base import RabbitMQManager
 
 import unittest
@@ -26,6 +27,13 @@ class TestPublisher(BasePublisher):
 
     def get_routing_key(self, message):
         return {'A': 'AA', 'B': 'BB'}.get(message, 'AA')
+
+
+class TestSingleMessagePublisher(BaseSingleMessagePublisher):
+    exchange = 'imio.amqp.test'
+
+    def get_routing_key(self, message):
+        return 'CC'
 
 
 def after_connection_open(event):
@@ -78,3 +86,23 @@ class TestBasePublisher(unittest.TestCase):
         self._publisher.stop_timeout = 6
         self._publisher.start()
         self.assertEqual(3, self._amqp.messages_number('imio.amqp.pub2queue'))
+
+
+class TestBaseSingleMessagePublisher(unittest.TestCase):
+
+    def setUp(self):
+        self._amqp = RabbitMQManager()
+        self._amqp.declare_exchange('imio.amqp.test', 'direct', durable='true')
+
+        connection = ('amqp://guest:guest@127.0.0.1:5672/%2F?'
+                      'connection_attempts=3&heartbeat_interval=3600')
+        self._publisher = TestSingleMessagePublisher(connection, logging=False)
+
+    def tearDown(self):
+        self._amqp.cleanup()
+
+    def test_publish(self):
+        self._publisher.setup_queue('imio.amqp.pub1queue', 'CC')
+        self._publisher.add_message('C')
+        self._publisher.start()
+        self.assertEqual(1, self._amqp.messages_number('imio.amqp.pub1queue'))

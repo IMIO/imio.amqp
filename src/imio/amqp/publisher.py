@@ -140,3 +140,10 @@ class BasePublisher(AMQPConnector):
             self._log('Published message #%d' % self._message_number)
         elif confirmation_type == 'nack':
             self._log('Unacknowledged message #%d' % self._message_number)
+
+
+class BaseSingleMessagePublisher(BasePublisher):
+
+    def publish(self, message):
+        super(BaseSingleMessagePublisher, self).publish(message)
+        self.stop()
