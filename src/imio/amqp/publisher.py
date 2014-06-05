@@ -6,10 +6,11 @@ from imio.amqp.event import notify
 from imio.amqp.exception import PublishException
 
 import cPickle
+import time
 
 
 class BasePublisher(AMQPConnector):
-    publish_interval = 1
+    publish_interval = None
     batch_interval = 15  # 15 seconds
 
     def __init__(self, *args, **kwargs):
@@ -106,8 +107,11 @@ class BasePublisher(AMQPConnector):
             self._connection.add_timeout(self.batch_interval,
                                          self._add_messages)
             return
-        self._connection.add_timeout(self.publish_interval,
-                                     self._publish)
+        if self.publish_interval is not None:
+            self._connection.add_timeout(self.publish_interval, self._publish)
+        else:
+            time.sleep(0.1)
+            self._publish()
 
     def stop(self):
         """Stop the publishing process"""
