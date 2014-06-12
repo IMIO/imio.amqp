@@ -16,6 +16,7 @@ class AMQPConnector(object):
     routing_key = 'key'
     logger_name = None
     log_file = None
+    connection_cls = pika.SelectConnection
 
     def __init__(self, amqp_url, logging=True):
         self._url = amqp_url
@@ -58,8 +59,8 @@ class AMQPConnector(object):
     def connect(self):
         """Open and return the connection to RabbitMQ"""
         self._log('Connecting to {0!s}'.format(self._url))
-        return pika.SelectConnection(pika.URLParameters(self._url),
-                                     self.on_connection_open)
+        return self.connection_cls(pika.URLParameters(self._url),
+                                   self.on_connection_open)
 
     def close_connection(self):
         """Close the connection to RabbitMQ"""
