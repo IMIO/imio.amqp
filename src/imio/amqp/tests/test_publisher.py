@@ -71,6 +71,7 @@ class TestBasePublisher(unittest.TestCase):
         self._publisher.stop_timeout = 1
         self._publisher.start()
         self.assertEqual(2, self._amqp.messages_number('imio.amqp.pub1queue'))
+        self.assertEqual(0, len(self._publisher._published_messages.keys()))
 
     def test_multiple_publisher(self):
         self._publisher.setup_queue('imio.amqp.pub1queue', 'AA')

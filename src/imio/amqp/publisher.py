@@ -21,6 +21,7 @@ class BasePublisher(AMQPConnector):
         self._queues = []
         self._declared_queues = 0
         self._binded_queues = 0
+        self._published_messages = {}
 
     def setup_queue(self, queue_name, routing_key):
         """Setup a queue. This method can be called multiple times to setup
@@ -86,9 +87,9 @@ class BasePublisher(AMQPConnector):
                 'Unknown routing key {0}'.format(routing_key))
         body = cPickle.dumps(self.transform_message(message))
         self._message_number += 1
+        self._published_messages[self._message_number] = message
         self._channel.basic_publish(self.exchange, routing_key, body,
                                     mandatory=True)
-        self.mark_message(message)
 
     def _add_messages(self):
         self._messages.extend(self.add_messages())
@@ -138,6 +139,10 @@ class BasePublisher(AMQPConnector):
         confirmation_type = method_frame.method.NAME.split('.')[1].lower()
         if confirmation_type == 'ack':
             self._log('Published message #%d' % self._message_number)
+            delivery_tag = method_frame.method.delivery_tag
+            message = self._published_messages.get(delivery_tag)
+            self.mark_message(message)
+            del self._published_messages[delivery_tag]
         elif confirmation_type == 'nack':
             self._log('Unacknowledged message #%d' % self._message_number)
 
