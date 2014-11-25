@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.1.1 (unreleased)
+0.1.1 (2014-11-25)
 ------------------
 
 - Mark the message only if the message was published
