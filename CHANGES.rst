@@ -4,7 +4,8 @@ Changelog
 0.1.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Mark the message only if the message was published
+  [mpeeters]
 
 
 0.1 (2014-10-17)
