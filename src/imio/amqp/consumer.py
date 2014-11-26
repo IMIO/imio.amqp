@@ -91,5 +91,5 @@ class BaseSingleMessageConsumer(BaseConsumer):
 
     def stop(self):
         self._log('Stopping')
-        self.basic_cancel()
+        self._channel.basic_cancel()
         self._log('Stopped')
