@@ -61,7 +61,8 @@ class BasePublisher(AMQPConnector):
             self.setup_queue(self.queue, self.routing_key)
         for queue, routing_key in self._queues:
             self._channel.queue_declare(self.on_queue_declared, queue,
-                                        durable=True)
+                                        durable=self.queue_durable,
+                                        auto_delete=self.queue_auto_delete)
 
     def on_queue_declared(self, method_frame):
         """Called when a queue has been configured"""

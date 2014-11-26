@@ -17,6 +17,9 @@ class AMQPConnector(object):
     logger_name = None
     log_file = None
     connection_cls = pika.SelectConnection
+    exchange_durable = True
+    queue_durable = True
+    queue_auto_delete = False
 
     def __init__(self, amqp_url, logging=True):
         self._url = amqp_url
@@ -107,12 +110,13 @@ class AMQPConnector(object):
         self._channel.exchange_declare(self.on_exchange_declared,
                                        self.exchange,
                                        self.exchange_type,
-                                       durable=True)
+                                       durable=self.exchange_durable)
 
     def on_exchange_declared(self, response_frame):
         """Called when RabbitMQ has finished the exchange declare"""
         self._channel.queue_declare(self.on_queue_declared, self.queue,
-                                    durable=True)
+                                    durable=self.queue_durable,
+                                    auto_delete=self.queue_auto_delete)
 
     def on_queue_declared(self, method_frame):
         """Called when a queue has been configured"""

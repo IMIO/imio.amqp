@@ -74,8 +74,9 @@ class BaseSingleMessageConsumer(BaseConsumer):
         self._channel = self._connection.channel()
         self._channel.exchange_declare(exchange=self.exchange,
                                        exchange_type=self.exchange_type,
-                                       durable=True)
-        self._channel.queue_declare(self.queue, durable=True)
+                                       durable=self.exchange_durable)
+        self._channel.queue_declare(self.queue, durable=self.queue_durable,
+                                    auto_delete=self.queue_auto_delete)
         self._channel.queue_bind(self.queue, self.exchange,
                                  self.routing_key)
 
