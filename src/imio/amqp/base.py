@@ -85,11 +85,28 @@ class AMQPConnector(object):
                       type='warning')
             self._connection.add_timeout(5, self.reconnect)
 
+    def on_connection_closed_0_9_5(self, method_frame):
+        """Called when the connection to RabbitMQ is closed unexpectedly
+        (Pika 0.9.5)"""
+        self._channel = None
+        if self._closing:
+            self._connection.ioloop.stop()
+        else:
+            reply_code = method_frame.reply_code
+            reply_text = method_frame.reply_text
+            self._log('Connection closed, reopening in 5 seconds: '
+                      '({0!s}) {1!s}'.format(reply_code, reply_text),
+                      type='warning')
+            self._connection.add_timeout(5, self.reconnect)
+
     def on_connection_open(self, connection):
         """Called when the connection to RabbitMQ is established"""
         self._log('Connection opened')
         notify(ConnectionOpenedEvent(self))
-        self._connection.add_on_close_callback(self.on_connection_closed)
+        if pika.__version__ == '0.9.5':
+            self._connection.add_on_close_callback(self.on_connection_closed_0_9_5)
+        else:
+            self._connection.add_on_close_callback(self.on_connection_closed)
         self.open_channel()
 
     def reconnect(self):
@@ -106,26 +123,49 @@ class AMQPConnector(object):
         if not self._closing:
             self._connection.close()
 
+    def on_channel_closed_0_9_5(self, reply_code, reply_text):
+        """Called when RabbitMQ unexpectedly closes the channel (Pika 0.9.5)"""
+        self._log('Channel was closed: ({0!s}) {1!s}'.format(reply_code,
+                                                             reply_text),
+                  type='warning')
+        if not self._closing:
+            self._connection.close()
+
     def on_channel_open(self, channel):
         """Called when the channed has been opened"""
         self._log('Channel opened')
         self._channel = channel
-        self._channel.add_on_close_callback(self.on_channel_closed)
-        self._channel.exchange_declare(self.on_exchange_declared,
-                                       self.exchange,
-                                       self.exchange_type,
-                                       durable=self.exchange_durable)
+        if pika.__version__ == '0.9.5':
+            self._channel.add_on_close_callback(self.on_channel_closed_0_9_5)
+        else:
+            self._channel.add_on_close_callback(self.on_channel_closed)
+        parameters = {
+            'callback': self.on_exchange_declared,
+            'exchange': self.exchange,
+            'durable': self.exchange_durable,
+        }
+        parameters[self.keywords('exchange_type')] = self.exchange_type
+        self._channel.exchange_declare(**parameters)
+
+    @staticmethod
+    def keywords(key):
+        if pika.__version__ == '0.9.5':
+            return {'exchange_type': 'type'}.get(key)
+        return key
 
     def on_exchange_declared(self, response_frame):
         """Called when RabbitMQ has finished the exchange declare"""
-        self._channel.queue_declare(self.on_queue_declared, self.queue,
+        self._channel.queue_declare(callback=self.on_queue_declared,
+                                    queue=self.queue,
                                     durable=self.queue_durable,
                                     auto_delete=self.queue_auto_delete)
 
     def on_queue_declared(self, method_frame):
         """Called when a queue has been configured"""
-        self._channel.queue_bind(self.on_bind, self.queue, self.exchange,
-                                 self.routing_key)
+        self._channel.queue_bind(callback=self.on_bind,
+                                 queue=self.queue,
+                                 exchange=self.exchange,
+                                 routing_key=self.routing_key)
 
     def on_bind(self, response_frame):
         """Called when the queue is ready to received or consumed messages"""

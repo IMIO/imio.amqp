@@ -72,13 +72,18 @@ class BaseSingleMessageConsumer(BaseConsumer):
         self._log('Connecting to {0!s}'.format(self._url))
         self._connection = self.connection_cls(pika.URLParameters(self._url))
         self._channel = self._connection.channel()
-        self._channel.exchange_declare(exchange=self.exchange,
-                                       exchange_type=self.exchange_type,
-                                       durable=self.exchange_durable)
-        self._channel.queue_declare(self.queue, durable=self.queue_durable,
+        parameters = {
+            'exchange': self.exchange,
+            'durable': self.exchange_durable,
+        }
+        parameters[self.keywords('exchange_type')] = self.exchange_type
+        self._channel.exchange_declare(**parameters)
+        self._channel.queue_declare(queue=self.queue,
+                                    durable=self.queue_durable,
                                     auto_delete=self.queue_auto_delete)
-        self._channel.queue_bind(self.queue, self.exchange,
-                                 self.routing_key)
+        self._channel.queue_bind(queue=self.queue,
+                                 exchange=self.exchange,
+                                 routing_key=self.routing_key)
 
     def get_message(self):
         method_frame, header_frame, body = self._channel.basic_get(self.queue)

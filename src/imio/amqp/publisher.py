@@ -60,7 +60,8 @@ class BasePublisher(AMQPConnector):
         if len(self._queues) == 0:
             self.setup_queue(self.queue, self.routing_key)
         for queue, routing_key in self._queues:
-            self._channel.queue_declare(self.on_queue_declared, queue,
+            self._channel.queue_declare(callback=self.on_queue_declared,
+                                        queue=queue,
                                         durable=self.queue_durable,
                                         auto_delete=self.queue_auto_delete)
 
@@ -69,8 +70,10 @@ class BasePublisher(AMQPConnector):
         self._declared_queues += 1
         if self._declared_queues == len(self._queues):
             for queue, routing_key in self._queues:
-                self._channel.queue_bind(self.on_bind, queue, self.exchange,
-                                         routing_key)
+                self._channel.queue_bind(callback=self.on_bind,
+                                         queue=queue,
+                                         exchange=self.exchange,
+                                         routing_key=routing_key)
 
     def _publish(self):
         """Publish a message from the message list"""
