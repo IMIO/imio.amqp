@@ -31,6 +31,10 @@ class AMQPConnector(object):
         if logging is True:
             self._set_logger()
 
+    @property
+    def url_parameters(self):
+        return pika.URLParameters(self._url)
+
     def setup_queue(self, queue_name, routing_key):
         """Setup the queue"""
         self.queue = queue_name
@@ -62,7 +66,7 @@ class AMQPConnector(object):
     def connect(self):
         """Open and return the connection to RabbitMQ"""
         self._log('Connecting to {0!s}'.format(self._url))
-        return self.connection_cls(pika.URLParameters(self._url),
+        return self.connection_cls(self.url_parameters,
                                    self.on_connection_open)
 
     def close_connection(self):
