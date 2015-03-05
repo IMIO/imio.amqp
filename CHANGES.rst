@@ -4,7 +4,8 @@ Changelog
 0.1.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Correct log message
+  [sgeulette]
 
 
 0.1.1 (2014-11-25)

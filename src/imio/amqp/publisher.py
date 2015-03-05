@@ -142,8 +142,8 @@ class BasePublisher(AMQPConnector):
     def on_delivery_confirmation(self, method_frame):
         confirmation_type = method_frame.method.NAME.split('.')[1].lower()
         if confirmation_type == 'ack':
-            self._log('Published message #%d' % self._message_number)
             delivery_tag = method_frame.method.delivery_tag
+            self._log('Published message #%d' % delivery_tag)
             message = self._published_messages.get(delivery_tag)
             self.mark_message(message)
             del self._published_messages[delivery_tag]
