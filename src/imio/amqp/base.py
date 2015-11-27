@@ -16,6 +16,7 @@ class AMQPConnector(object):
     routing_key = 'key'
     logger_name = None
     log_file = None
+    log_path = '.'
     connection_cls = pika.SelectConnection
     exchange_durable = True
     queue_durable = True
@@ -49,7 +50,7 @@ class AMQPConnector(object):
         """Set logging"""
         self._logger = logging.getLogger(self.logger_name)
         self._logger.setLevel(logging.DEBUG)
-        fh = TimedRotatingFileHandler(os.path.join('.', self.log_file),
+        fh = TimedRotatingFileHandler(os.path.join(self.log_path, self.log_file),
                                       'midnight', 1)
         fh.suffix = "%Y-%m-%d-%H-%M"
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s '

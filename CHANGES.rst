@@ -4,6 +4,9 @@ Changelog
 0.1.2 (unreleased)
 ------------------
 
+- Add the log_path parameters for consumers and publishers
+  [mpeeters]
+
 - Make the package compatible with Pika 0.9.5
   [mpeeters]
 
