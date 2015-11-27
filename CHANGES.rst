@@ -4,6 +4,21 @@ Changelog
 0.1.2 (unreleased)
 ------------------
 
+- Make the package compatible with Pika 0.9.5
+  [mpeeters]
+
+- Add the url_parameters property
+  [mpeeters]
+
+- Add parameters for the consumers and publishers
+  [mpeeters]
+
+- Fix the stop method on the single message consumer
+  [mpeeters]
+
+- Add the BaseSingleMessageConsumer to api
+  [mpeeters]
+
 - Correct log message
   [sgeulette]
 
