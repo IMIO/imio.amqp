@@ -4,6 +4,9 @@ Changelog
 0.1.2 (unreleased)
 ------------------
 
+- Define the delivery mode to make messages persistent by default
+  [mpeeters]
+
 - Add the log_path parameters for consumers and publishers
   [mpeeters]
 

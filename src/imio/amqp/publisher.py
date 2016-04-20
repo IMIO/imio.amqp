@@ -6,6 +6,7 @@ from imio.amqp.event import notify
 from imio.amqp.exception import PublishException
 
 import cPickle
+import pika
 import time
 
 
@@ -83,7 +84,7 @@ class BasePublisher(AMQPConnector):
         self.publish(message)
         self.schedule_next_message()
 
-    def publish(self, message):
+    def publish(self, message, delivery_mode=2):
         """Publish a message"""
         routing_key = self.get_routing_key(message)
         if routing_key not in self.routing_keys:
@@ -92,8 +93,14 @@ class BasePublisher(AMQPConnector):
         body = cPickle.dumps(self.transform_message(message))
         self._message_number += 1
         self._published_messages[self._message_number] = message
-        self._channel.basic_publish(self.exchange, routing_key, body,
-                                    mandatory=True)
+        self._channel.basic_publish(
+            self.exchange,
+            routing_key,
+            body,
+            pika.BasicProperties(content_type='text/plain',
+                                 delivery_mode=delivery_mode),
+            mandatory=True,
+        )
 
     def _add_messages(self):
         self._messages.extend(self.add_messages())
