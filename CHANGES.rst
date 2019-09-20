@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.2.1 (unreleased)
+0.2.1 (2019-09-20)
 ------------------
 
 - Increase logging for treatement errors
