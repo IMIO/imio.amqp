@@ -4,7 +4,6 @@ _subscribers = []
 
 
 class Event(object):
-
     def __init__(self, context):
         self.context = context
 

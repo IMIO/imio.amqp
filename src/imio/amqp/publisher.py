@@ -35,7 +35,7 @@ class BasePublisher(AMQPConnector):
 
     def add_messages(self):
         """Method called to verify if there is new messages to publish"""
-        raise NotImplementedError('add_messages method must be implemented')
+        raise NotImplementedError("add_messages method must be implemented")
 
     def add_message(self, message):
         """Add a message that will be published"""
@@ -48,8 +48,10 @@ class BasePublisher(AMQPConnector):
     def get_routing_key(self, message):
         if len(self._queues) == 1:
             return self._queues[0][1]
-        raise NotImplementedError('If multiple queues are defined, the '
-                                  'get_routing_key method must be overrided')
+        raise NotImplementedError(
+            "If multiple queues are defined, the "
+            "get_routing_key method must be overrided"
+        )
 
     @property
     def routing_keys(self):
@@ -61,20 +63,24 @@ class BasePublisher(AMQPConnector):
         if len(self._queues) == 0:
             self.setup_queue(self.queue, self.routing_key)
         for queue, routing_key in self._queues:
-            self._channel.queue_declare(callback=self.on_queue_declared,
-                                        queue=queue,
-                                        durable=self.queue_durable,
-                                        auto_delete=self.queue_auto_delete)
+            self._channel.queue_declare(
+                callback=self.on_queue_declared,
+                queue=queue,
+                durable=self.queue_durable,
+                auto_delete=self.queue_auto_delete,
+            )
 
     def on_queue_declared(self, method_frame):
         """Called when a queue has been configured"""
         self._declared_queues += 1
         if self._declared_queues == len(self._queues):
             for queue, routing_key in self._queues:
-                self._channel.queue_bind(callback=self.on_bind,
-                                         queue=queue,
-                                         exchange=self.exchange,
-                                         routing_key=routing_key)
+                self._channel.queue_bind(
+                    callback=self.on_bind,
+                    queue=queue,
+                    exchange=self.exchange,
+                    routing_key=routing_key,
+                )
 
     def _publish(self):
         """Publish a message from the message list"""
@@ -88,8 +94,7 @@ class BasePublisher(AMQPConnector):
         """Publish a message"""
         routing_key = self.get_routing_key(message)
         if routing_key not in self.routing_keys:
-            raise PublishException(
-                'Unknown routing key {0}'.format(routing_key))
+            raise PublishException("Unknown routing key {0}".format(routing_key))
         body = cPickle.dumps(self.transform_message(message))
         self._message_number += 1
         self._published_messages[self._message_number] = message
@@ -97,8 +102,9 @@ class BasePublisher(AMQPConnector):
             self.exchange,
             routing_key,
             body,
-            pika.BasicProperties(content_type='text/plain',
-                                 delivery_mode=delivery_mode),
+            pika.BasicProperties(
+                content_type="text/plain", delivery_mode=delivery_mode
+            ),
             mandatory=True,
         )
 
@@ -108,7 +114,7 @@ class BasePublisher(AMQPConnector):
 
     def start_publishing(self):
         """Begin the publishing of messages"""
-        self._log('Begin the publishing of messages')
+        self._log("Begin the publishing of messages")
         self.schedule_next_message()
 
     def schedule_next_message(self):
@@ -116,8 +122,7 @@ class BasePublisher(AMQPConnector):
         if self._closing is True:
             return
         if len(self._messages) == 0:
-            self._connection.add_timeout(self.batch_interval,
-                                         self._add_messages)
+            self._connection.add_timeout(self.batch_interval, self._add_messages)
             return
         if self.publish_interval is not None:
             self._connection.add_timeout(self.publish_interval, self._publish)
@@ -127,13 +132,13 @@ class BasePublisher(AMQPConnector):
 
     def stop(self):
         """Stop the publishing process"""
-        self._log('Stopping')
+        self._log("Stopping")
         self._closing = True
         self.close_channel()
         self.close_connection()
         # Allow the publisher to cleanly disconnect from RabbitMQ
         self._connection.ioloop.start()
-        self._log('Stopped')
+        self._log("Stopped")
 
     def on_bind(self, response_frame):
         """Called when the queue is ready to received messages"""
@@ -147,19 +152,18 @@ class BasePublisher(AMQPConnector):
         self._channel.confirm_delivery(self.on_delivery_confirmation)
 
     def on_delivery_confirmation(self, method_frame):
-        confirmation_type = method_frame.method.NAME.split('.')[1].lower()
-        if confirmation_type == 'ack':
+        confirmation_type = method_frame.method.NAME.split(".")[1].lower()
+        if confirmation_type == "ack":
             delivery_tag = method_frame.method.delivery_tag
-            self._log('Published message #%d' % delivery_tag)
+            self._log("Published message #%d" % delivery_tag)
             message = self._published_messages.get(delivery_tag)
             self.mark_message(message)
             del self._published_messages[delivery_tag]
-        elif confirmation_type == 'nack':
-            self._log('Unacknowledged message #%d' % self._message_number)
+        elif confirmation_type == "nack":
+            self._log("Unacknowledged message #%d" % self._message_number)
 
 
 class BaseSingleMessagePublisher(BasePublisher):
-
     def publish(self, message):
         super(BaseSingleMessagePublisher, self).publish(message)
         self.stop()

@@ -13,20 +13,20 @@ import unittest
 
 
 class TestConsumer(BaseConsumer):
-    exchange = 'imio.amqp.test'
-    queue = 'imio.amqp.conqueue'
-    routing_key = 'AA'
+    exchange = "imio.amqp.test"
+    queue = "imio.amqp.conqueue"
+    routing_key = "AA"
 
     def treat_message(self, message):
-        if not hasattr(self, '_messages'):
+        if not hasattr(self, "_messages"):
             self._messages = []
         self._messages.append(message)
 
 
 class TestSingleMessageConsumer(BaseSingleMessageConsumer):
-    exchange = 'imio.amqp.test'
-    queue = 'imio.amqp.conqueue'
-    routing_key = 'AA'
+    exchange = "imio.amqp.test"
+    queue = "imio.amqp.conqueue"
+    routing_key = "AA"
 
 
 def after_connection_open(event):
@@ -34,16 +34,18 @@ def after_connection_open(event):
 
 
 class TestBaseConsumer(unittest.TestCase):
-
     def setUp(self):
         self._amqp = RabbitMQManager()
-        self._amqp.declare_exchange('imio.amqp.test', 'direct', durable='true')
-        self._amqp.declare_queue('imio.amqp.conqueue', durable='true')
-        self._amqp.declare_bind('imio.amqp.test', 'imio.amqp.conqueue',
-                                routing_key='AA')
+        self._amqp.declare_exchange("imio.amqp.test", "direct", durable="true")
+        self._amqp.declare_queue("imio.amqp.conqueue", durable="true")
+        self._amqp.declare_bind(
+            "imio.amqp.test", "imio.amqp.conqueue", routing_key="AA"
+        )
 
-        connection = ('amqp://guest:guest@127.0.0.1:5672/%2F?'
-                      'connection_attempts=3&heartbeat_interval=3600')
+        connection = (
+            "amqp://guest:guest@127.0.0.1:5672/%2F?"
+            "connection_attempts=3&heartbeat_interval=3600"
+        )
         self._consumer = TestConsumer(connection, logging=False)
         add_subscriber(ConnectionOpenedEvent, after_connection_open)
 
@@ -52,34 +54,36 @@ class TestBaseConsumer(unittest.TestCase):
         self._amqp.cleanup()
 
     def test_consuming(self):
-        self._amqp.publish_message('imio.amqp.test', 'AA', 'foo')
-        self._amqp.publish_message('imio.amqp.test', 'AA', 'bar')
+        self._amqp.publish_message("imio.amqp.test", "AA", "foo")
+        self._amqp.publish_message("imio.amqp.test", "AA", "bar")
         self._consumer.start()
-        self.assertEqual(['foo', 'bar'], self._consumer._messages)
+        self.assertEqual(["foo", "bar"], self._consumer._messages)
 
 
 class TestBaseSingleMessageConsumer(unittest.TestCase):
-
     def setUp(self):
         self._amqp = RabbitMQManager()
-        self._amqp.declare_exchange('imio.amqp.test', 'direct', durable='true')
-        self._amqp.declare_queue('imio.amqp.conqueue', durable='true')
-        self._amqp.declare_bind('imio.amqp.test', 'imio.amqp.conqueue',
-                                routing_key='AA')
+        self._amqp.declare_exchange("imio.amqp.test", "direct", durable="true")
+        self._amqp.declare_queue("imio.amqp.conqueue", durable="true")
+        self._amqp.declare_bind(
+            "imio.amqp.test", "imio.amqp.conqueue", routing_key="AA"
+        )
 
-        connection = ('amqp://guest:guest@127.0.0.1:5672/%2F?'
-                      'connection_attempts=3&heartbeat_interval=3600')
+        connection = (
+            "amqp://guest:guest@127.0.0.1:5672/%2F?"
+            "connection_attempts=3&heartbeat_interval=3600"
+        )
         self._consumer = TestSingleMessageConsumer(connection, logging=False)
 
     def tearDown(self):
         self._amqp.cleanup()
 
     def test_consumer(self):
-        self._amqp.publish_message('imio.amqp.test', 'AA', 'foo')
-        self._amqp.publish_message('imio.amqp.test', 'AA', 'bar')
+        self._amqp.publish_message("imio.amqp.test", "AA", "foo")
+        self._amqp.publish_message("imio.amqp.test", "AA", "bar")
         self._consumer.start()
         message = cPickle.loads(self._consumer.get_message())
         self._consumer.acknowledge_message()
-        self.assertEqual('foo', message)
+        self.assertEqual("foo", message)
         time.sleep(1.5)
-        self.assertEqual(1, self._amqp.messages_number('imio.amqp.conqueue'))
+        self.assertEqual(1, self._amqp.messages_number("imio.amqp.conqueue"))
