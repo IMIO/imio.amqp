@@ -39,8 +39,10 @@ class BaseConsumer(AMQPConnector):
         try:
             self.treat_message(cPickle.loads(body))
             self.acknowledge_message(basic_deliver.delivery_tag)
-        except Exception:
-            self._log("Error during treatment", type="warning")
+        except Exception as e:
+            self._log(
+                u"Error during treatment {0}".format(e.__repr__()), type="warning"
+            )
 
     def acknowledge_message(self, delivery_tag):
         """Acknowledged a message"""
