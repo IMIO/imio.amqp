@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.2.2 (unreleased)
+0.2.2 (2019-10-11)
 ------------------
 
 - Improve logging for docker containers
