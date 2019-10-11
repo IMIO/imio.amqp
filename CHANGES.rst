@@ -4,7 +4,8 @@ Changelog
 0.2.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Improve logging for docker containers
+  [mpeeters]
 
 
 0.2.1 (2019-09-20)
