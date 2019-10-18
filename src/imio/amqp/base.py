@@ -3,6 +3,7 @@
 from imio.amqp.event import ConnectionOpenedEvent
 from imio.amqp.event import notify
 from logging.handlers import TimedRotatingFileHandler
+from pika.exceptions import AMQPConnectionError
 
 import logging
 import os
@@ -62,7 +63,8 @@ class AMQPConnector(object):
         )
         fh.setFormatter(formatter)
         fh.setLevel(logging.DEBUG)
-        self._logger.addHandler(fh)
+        if not self._logger.handlers:
+            self._logger.addHandler(fh)
 
     def _log(self, message, type="info"):
         """Log a message if a logger has been defined"""
@@ -86,11 +88,11 @@ class AMQPConnector(object):
             self._connection.ioloop.stop()
         else:
             self._log(
-                "Connection closed, reopening in 5 seconds: "
+                "Connection closed, try to reopening: "
                 "({0!s}) {1!s}".format(reply_code, reply_text),
                 type="warning",
             )
-            self._connection.add_timeout(5, self.reconnect)
+            raise AMQPConnectionError
 
     def on_connection_closed_0_9_5(self, method_frame):
         """Called when the connection to RabbitMQ is closed unexpectedly
@@ -102,11 +104,11 @@ class AMQPConnector(object):
             reply_code = method_frame.reply_code
             reply_text = method_frame.reply_text
             self._log(
-                "Connection closed, reopening in 5 seconds: "
+                "Connection closed, try to reopening: "
                 "({0!s}) {1!s}".format(reply_code, reply_text),
                 type="warning",
             )
-            self._connection.add_timeout(5, self.reconnect)
+            raise AMQPConnectionError
 
     def on_connection_open(self, connection):
         """Called when the connection to RabbitMQ is established"""
