@@ -4,7 +4,8 @@ Changelog
 0.2.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Improve logging
+  [mpeeters]
 
 
 0.2.2 (2019-10-11)

@@ -57,8 +57,7 @@ class BaseDispatcher(AMQPConnector):
 
     def stop(self):
         """Stop the process"""
-        self._log("Stopping")
-        self.consumer._closing = True
+        self._log("Stopping the dispatcher")
         self.publisher._closing = True
         self.publisher.close_channel()
         if self.consumer._channel:
@@ -67,4 +66,4 @@ class BaseDispatcher(AMQPConnector):
             )
         # Allow the process to cleanly disconnect from RabbitMQ
         self._connection.ioloop.start()
-        self._log("Stopped")
+        self._log("Dispatcher stopped")
