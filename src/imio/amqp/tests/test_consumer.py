@@ -6,6 +6,7 @@ from imio.amqp.event import ConnectionOpenedEvent
 from imio.amqp.event import add_subscriber
 from imio.amqp.event import _subscribers
 from imio.amqp.tests.base import RabbitMQManager
+from pika.exceptions import ChannelClosed
 
 import cPickle
 import time
@@ -56,7 +57,8 @@ class TestBaseConsumer(unittest.TestCase):
     def test_consuming(self):
         self._amqp.publish_message("imio.amqp.test", "AA", "foo")
         self._amqp.publish_message("imio.amqp.test", "AA", "bar")
-        self._consumer.start()
+        self.assertIsNone(getattr(self._consumer, "_messages", None))
+        self.assertRaises(ChannelClosed, self._consumer.start)
         self.assertEqual(["foo", "bar"], self._consumer._messages)
 
 
