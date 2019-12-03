@@ -81,7 +81,7 @@ class TestBaseDispatcher(unittest.TestCase):
         self._amqp.delete_queue("imio.amqp.pub2queue")
         self._amqp.cleanup()
 
-    def test_dispatcher(self):
+    def test_base_dispatcher(self):
         self._dispatcher.publisher.setup_queue("imio.amqp.pub1queue", "AA")
         self._dispatcher.publisher.setup_queue("imio.amqp.pub2queue", "BB")
         self._dispatcher.stop_timeout = 8
