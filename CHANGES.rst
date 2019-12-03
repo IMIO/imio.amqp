@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.2.3 (unreleased)
+0.3.0 (2019-12-03)
 ------------------
 
 - Adapt consumer, publisher and dispatcher to handle restart correctly
