@@ -134,7 +134,8 @@ class BasePublisher(AMQPConnector):
         """Stop the publishing process"""
         self._log("Stopping publisher")
         self._closing = True
-        self.close_channel()
+        if self._channel.is_open:
+            self.close_channel()
         self.close_connection()
         # Allow the publisher to cleanly disconnect from RabbitMQ
         self._connection.ioloop.start()

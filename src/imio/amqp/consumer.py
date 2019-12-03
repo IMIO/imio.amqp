@@ -53,16 +53,18 @@ class BaseConsumer(AMQPConnector):
         """Stop consuming messages"""
         self._log("Stopping consumer")
         self._closing = True
-        if self._channel:
-            self._channel.basic_cancel(self.on_cancel, self._consumer_tag)
+        if self._channel.is_open:
+            self.close_channel()
+            self._channel.basic_cancel(consumer_tag=self._consumer_tag)
         # Allow the consumer to cleanly disconnect from RabbitMQ
-        self._connection.ioloop.start()
         self._log("Consumer stopped")
 
     def on_bind(self, response_frame):
         """Called when the queue is ready to consumed messages"""
-        self.start_consuming()
-        notify(ConsumerReadyEvent(self))
+        if getattr(self, '_on_bind', False) is False:
+            self.start_consuming()
+            notify(ConsumerReadyEvent(self))
+            self._on_bind = True
 
     def on_cancel(self, frame):
         """Stop the connection and the channel"""

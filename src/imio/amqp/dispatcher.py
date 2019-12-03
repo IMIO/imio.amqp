@@ -5,6 +5,7 @@ from imio.amqp.event import ConnectionOpenedEvent
 from imio.amqp.event import PublisherReadyEvent
 from imio.amqp.event import add_subscriber
 from imio.amqp.event import notify
+from pika.exceptions import AMQPConnectionError
 
 
 def schedule_next_message(self):
@@ -22,6 +23,7 @@ class BaseDispatcher(AMQPConnector):
     def __init__(self, consumer_class, publisher_class, amqp_url, logging=True):
         self._url = amqp_url
         self.logging = logging
+        self._closing = False
 
         if self.logging is True:
             self._set_logger()
@@ -55,15 +57,21 @@ class BaseDispatcher(AMQPConnector):
         add_subscriber(PublisherReadyEvent, publisher_ready)
         self.publisher.open_channel()
 
+    def on_connection_closed(self, connection, reply_code, reply_text):
+        """Called when the connection to RabbitMQ is closed unexpectedly"""
+        if self._closing:
+            self._connection.ioloop.stop()
+        else:
+            self._log(
+                "Connection closed, try to reopening: "
+                "({0!s}) {1!s}".format(reply_code, reply_text),
+                type="warning",
+            )
+            raise AMQPConnectionError
+
     def stop(self):
         """Stop the process"""
         self._log("Stopping the dispatcher")
-        self.publisher._closing = True
-        self.publisher.close_channel()
-        if self.consumer._channel:
-            self.consumer._channel.basic_cancel(
-                self.consumer.on_cancel, self.consumer._consumer_tag
-            )
-        # Allow the process to cleanly disconnect from RabbitMQ
-        self._connection.ioloop.start()
+        self.consumer.stop()
+        self.publisher.stop()
         self._log("Dispatcher stopped")

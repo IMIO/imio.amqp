@@ -4,6 +4,9 @@ Changelog
 0.2.3 (unreleased)
 ------------------
 
+- Adapt consumer, publisher and dispatcher to handle restart correctly
+  [mpeeters]
+
 - Improve logging
   [mpeeters]
 
