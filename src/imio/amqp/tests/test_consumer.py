@@ -2,13 +2,13 @@
 
 from imio.amqp.consumer import BaseConsumer
 from imio.amqp.consumer import BaseSingleMessageConsumer
-from imio.amqp.event import ConnectionOpenedEvent
-from imio.amqp.event import add_subscriber
 from imio.amqp.event import _subscribers
+from imio.amqp.event import add_subscriber
+from imio.amqp.event import ConnectionOpenedEvent
 from imio.amqp.tests.base import RabbitMQManager
-from pika.exceptions import ChannelClosed
+from pika.exceptions import AMQPConnectionError
 
-import cPickle
+import pickle
 import time
 import unittest
 
@@ -31,7 +31,7 @@ class TestSingleMessageConsumer(BaseSingleMessageConsumer):
 
 
 def after_connection_open(event):
-    event.context._connection.add_timeout(4, event.context.stop)
+    event.context._connection.ioloop.call_later(4, event.context.stop)
 
 
 class TestBaseConsumer(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestBaseConsumer(unittest.TestCase):
 
         connection = (
             "amqp://guest:guest@127.0.0.1:5672/%2F?"
-            "connection_attempts=3&heartbeat_interval=3600"
+            "connection_attempts=3&heartbeat=3600"
         )
         self._consumer = TestConsumer(connection, logging=False)
         add_subscriber(ConnectionOpenedEvent, after_connection_open)
@@ -58,8 +58,15 @@ class TestBaseConsumer(unittest.TestCase):
         self._amqp.publish_message("imio.amqp.test", "AA", "foo")
         self._amqp.publish_message("imio.amqp.test", "AA", "bar")
         self.assertIsNone(getattr(self._consumer, "_messages", None))
-        self.assertRaises(ChannelClosed, self._consumer.start)
+        self._consumer.start()
         self.assertEqual(["foo", "bar"], self._consumer._messages)
+
+    def test_connection_refused(self):
+        consumer = TestConsumer(
+            "amqp://guest:guest@127.0.0.1:5672/%2Fmissing?connection_attempts=1",
+            logging=False,
+        )
+        self.assertRaises(AMQPConnectionError, consumer.start)
 
 
 class TestBaseSingleMessageConsumer(unittest.TestCase):
@@ -73,7 +80,7 @@ class TestBaseSingleMessageConsumer(unittest.TestCase):
 
         connection = (
             "amqp://guest:guest@127.0.0.1:5672/%2F?"
-            "connection_attempts=3&heartbeat_interval=3600"
+            "connection_attempts=3&heartbeat=3600"
         )
         self._consumer = TestSingleMessageConsumer(connection, logging=False)
 
@@ -84,7 +91,7 @@ class TestBaseSingleMessageConsumer(unittest.TestCase):
         self._amqp.publish_message("imio.amqp.test", "AA", "foo")
         self._amqp.publish_message("imio.amqp.test", "AA", "bar")
         self._consumer.start()
-        message = cPickle.loads(self._consumer.get_message())
+        message = pickle.loads(self._consumer.get_message())
         self._consumer.acknowledge_message()
         self.assertEqual("foo", message)
         time.sleep(1.5)

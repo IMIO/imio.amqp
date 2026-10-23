@@ -74,38 +74,32 @@ class AMQPConnector(object):
     def connect(self):
         """Open and return the connection to RabbitMQ"""
         self._log("Connecting to {0!s}".format(self._url))
-        return self.connection_cls(self.url_parameters, self.on_connection_open)
+        return self.connection_cls(
+            self.url_parameters,
+            on_open_callback=self.on_connection_open,
+            on_open_error_callback=self.on_connection_open_error,
+        )
+
+    def on_connection_open_error(self, connection, error):
+        """Called when the connection to RabbitMQ cannot be opened, pika
+        swallows exceptions raised here so start() raises it instead"""
+        self._connection_error = error
+        connection.ioloop.stop()
 
     def close_connection(self):
         """Close the connection to RabbitMQ"""
-        self._log("Closing connection")
-        self._connection.close()
+        if self._connection.is_open:
+            self._log("Closing connection")
+            self._connection.close()
 
-    def on_connection_closed(self, connection, reply_code, reply_text):
-        """Called when the connection to RabbitMQ is closed unexpectedly"""
+    def on_connection_closed(self, connection, reason):
+        """Called when the connection to RabbitMQ is closed"""
         self._channel = None
         if self._closing:
             self._connection.ioloop.stop()
         else:
             self._log(
-                "Connection closed, try to reopening: "
-                "({0!s}) {1!s}".format(reply_code, reply_text),
-                type="warning",
-            )
-            raise AMQPConnectionError
-
-    def on_connection_closed_0_9_5(self, method_frame):
-        """Called when the connection to RabbitMQ is closed unexpectedly
-        (Pika 0.9.5)"""
-        self._channel = None
-        if self._closing:
-            self._connection.ioloop.stop()
-        else:
-            reply_code = method_frame.reply_code
-            reply_text = method_frame.reply_text
-            self._log(
-                "Connection closed, try to reopening: "
-                "({0!s}) {1!s}".format(reply_code, reply_text),
+                "Connection closed, try to reopening: {0!r}".format(reason),
                 type="warning",
             )
             raise AMQPConnectionError
@@ -114,10 +108,7 @@ class AMQPConnector(object):
         """Called when the connection to RabbitMQ is established"""
         self._log("Connection opened")
         notify(ConnectionOpenedEvent(self))
-        if pika.__version__ == "0.9.5":
-            self._connection.add_on_close_callback(self.on_connection_closed_0_9_5)
-        else:
-            self._connection.add_on_close_callback(self.on_connection_closed)
+        self._connection.add_on_close_callback(self.on_connection_closed)
         self.open_channel()
 
     def reconnect(self):
@@ -126,45 +117,22 @@ class AMQPConnector(object):
         self._connection = self.connect()
         self._connection.ioloop.start()
 
-    def on_channel_closed(self, channel, reply_code, reply_text):
-        """Called when RabbitMQ unexpectedly closes the channel"""
-        self._log(
-            "Channel was closed: ({0!s}) {1!s}".format(reply_code, reply_text),
-            type="warning",
-        )
-        if not self._closing:
-            self._connection.close()
-
-    def on_channel_closed_0_9_5(self, reply_code, reply_text):
-        """Called when RabbitMQ unexpectedly closes the channel (Pika 0.9.5)"""
-        self._log(
-            "Channel was closed: ({0!s}) {1!s}".format(reply_code, reply_text),
-            type="warning",
-        )
-        if not self._closing:
-            self._connection.close()
+    def on_channel_closed(self, channel, reason):
+        """Called when the channel is closed, by RabbitMQ or by stop()"""
+        self._log("Channel was closed: {0!r}".format(reason), type="warning")
+        self.close_connection()
 
     def on_channel_open(self, channel):
         """Called when the channed has been opened"""
         self._log("Channel opened")
         self._channel = channel
-        if pika.__version__ == "0.9.5":
-            self._channel.add_on_close_callback(self.on_channel_closed_0_9_5)
-        else:
-            self._channel.add_on_close_callback(self.on_channel_closed)
-        parameters = {
-            "callback": self.on_exchange_declared,
-            "exchange": self.exchange,
-            "durable": self.exchange_durable,
-        }
-        parameters[self.keywords("exchange_type")] = self.exchange_type
-        self._channel.exchange_declare(**parameters)
-
-    @staticmethod
-    def keywords(key):
-        if pika.__version__ == "0.9.5":
-            return {"exchange_type": "type"}.get(key)
-        return key
+        self._channel.add_on_close_callback(self.on_channel_closed)
+        self._channel.exchange_declare(
+            callback=self.on_exchange_declared,
+            exchange=self.exchange,
+            exchange_type=self.exchange_type,
+            durable=self.exchange_durable,
+        )
 
     def on_exchange_declared(self, response_frame):
         """Called when RabbitMQ has finished the exchange declare"""
@@ -196,8 +164,8 @@ class AMQPConnector(object):
 
     def close_channel(self):
         """Close the channel with RabbitMQ"""
-        self._log("Closing the channel")
-        if self._channel:
+        if self._channel and self._channel.is_open:
+            self._log("Closing the channel")
             self._channel.close()
 
     def open_channel(self):
@@ -207,5 +175,8 @@ class AMQPConnector(object):
 
     def start(self):
         """Start the process"""
+        self._connection_error = None
         self._connection = self.connect()
         self._connection.ioloop.start()
+        if self._connection_error is not None:
+            raise self._connection_error

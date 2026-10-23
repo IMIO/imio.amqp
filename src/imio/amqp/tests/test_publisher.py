@@ -37,7 +37,7 @@ class TestSingleMessagePublisher(BaseSingleMessagePublisher):
 
 
 def after_connection_open(event):
-    event.context._connection.add_timeout(
+    event.context._connection.ioloop.call_later(
         event.context.stop_timeout, event.context.stop
     )
 
@@ -49,7 +49,7 @@ class TestBasePublisher(unittest.TestCase):
 
         connection = (
             "amqp://guest:guest@127.0.0.1:5672/%2F?"
-            "connection_attempts=3&heartbeat_interval=3600"
+            "connection_attempts=3&heartbeat=3600"
         )
         self._publisher = TestPublisher(connection, logging=False)
         add_subscriber(ConnectionOpenedEvent, after_connection_open)
@@ -98,11 +98,12 @@ class TestBaseSingleMessagePublisher(unittest.TestCase):
 
         connection = (
             "amqp://guest:guest@127.0.0.1:5672/%2F?"
-            "connection_attempts=3&heartbeat_interval=3600"
+            "connection_attempts=3&heartbeat=3600"
         )
         self._publisher = TestSingleMessagePublisher(connection, logging=False)
 
     def tearDown(self):
+        self._amqp.delete_queue("imio.amqp.pub1queue")
         self._amqp.cleanup()
 
     def test_publish(self):

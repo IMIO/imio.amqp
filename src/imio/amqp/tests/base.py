@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import cPickle
+import pickle
+import pika
 import subprocess
 
 
@@ -26,11 +27,12 @@ class RabbitMQManager(object):
     def _exec(self, *args):
         c_args = ["rabbitmqadmin"]
         c_args.extend(list(args))
-        proc = subprocess.Popen(c_args, stdout=subprocess.PIPE)
+        proc = subprocess.Popen(c_args, stdout=subprocess.PIPE, text=True)
         return proc.communicate()[0]
 
     def publish_message(self, exchange, routing_key, message):
-        message = cPickle.dumps(message)
+        # rabbitmqadmin takes the payload as text: protocol 0 is ASCII
+        message = pickle.dumps(message, protocol=0).decode("ascii")
         self._exec(
             "publish",
             "exchange={0}".format(exchange),
@@ -141,12 +143,15 @@ class RabbitMQManager(object):
         return [[e.strip() for e in l.split("|")] for l in result.splitlines()[3:-1]]
 
     def messages_number(self, queue):
-        """Return the number of messages in a queue"""
-        out = self._exec("list", "queues", "name", "messages")
-        for line in self._parse_listing(out):
-            if line[1] == queue:
-                try:
-                    return int(line[2])
-                except:
-                    break
-        return 0
+        """Return the number of messages in a queue, straight from the broker
+        (the management API refreshes its counts only every few seconds)"""
+        connection = pika.BlockingConnection(
+            pika.URLParameters("amqp://guest:guest@127.0.0.1:5672/%2F")
+        )
+        try:
+            result = connection.channel().queue_declare(queue, passive=True)
+            return result.method.message_count
+        except pika.exceptions.ChannelClosedByBroker:
+            return 0
+        finally:
+            connection.close()

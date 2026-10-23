@@ -6,7 +6,6 @@ from imio.amqp.event import add_subscriber
 from imio.amqp.event import _subscribers
 from imio.amqp.publisher import BasePublisher
 from imio.amqp.tests.base import RabbitMQManager
-from pika.exceptions import ChannelClosed
 
 import unittest
 
@@ -47,13 +46,13 @@ class TestDispatcher(BaseDispatcher):
 
 
 def after_connection_open(event):
-    event.context._connection.add_timeout(
+    event.context._connection.ioloop.call_later(
         event.context.stop_timeout, event.context.stop
     )
 
 
 def after_connection_open_publish(event):
-    event.context._connection.add_timeout(3, event.context.publish_base)
+    event.context._connection.ioloop.call_later(3, event.context.publish_base)
 
 
 class TestBaseDispatcher(unittest.TestCase):
@@ -67,7 +66,7 @@ class TestBaseDispatcher(unittest.TestCase):
 
         connection = (
             "amqp://guest:guest@127.0.0.1:5672/%2F?"
-            "connection_attempts=3&heartbeat_interval=3600"
+            "connection_attempts=3&heartbeat=3600"
         )
         self._dispatcher = TestDispatcher(
             TestConsumer, TestPublisher, connection, logging=False
@@ -87,7 +86,7 @@ class TestBaseDispatcher(unittest.TestCase):
         self._dispatcher.stop_timeout = 8
         add_subscriber(ConnectionOpenedEvent, after_connection_open_publish)
 
-        self.assertRaises(ChannelClosed, self._dispatcher.start)
+        self._dispatcher.start()
         self.assertEqual(2, self._amqp.messages_number("imio.amqp.pub1queue"))
         self.assertEqual(3, self._amqp.messages_number("imio.amqp.pub2queue"))
 
@@ -96,7 +95,7 @@ class TestBaseDispatcher(unittest.TestCase):
         self._amqp.publish_message("imio.amqp.test", "key", "A")
         self._amqp.publish_message("imio.amqp.test", "key", "A")
 
-        self.assertRaises(ChannelClosed, self._dispatcher.start)
+        self._dispatcher.start()
         self.assertEqual(2, self._amqp.messages_number("imio.amqp.pub1queue"))
 
     def test_publish_on_missing_queue(self):
@@ -104,6 +103,6 @@ class TestBaseDispatcher(unittest.TestCase):
         self._dispatcher.stop_timeout = 8
         add_subscriber(ConnectionOpenedEvent, after_connection_open_publish)
 
-        self.assertRaises(ChannelClosed, self._dispatcher.start)
+        self._dispatcher.start()
         self.assertEqual(2, self._amqp.messages_number("imio.amqp.pub1queue"))
         self.assertEqual(3, self._amqp.messages_number("imio.amqp.conqueue"))

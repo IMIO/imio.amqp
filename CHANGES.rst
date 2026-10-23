@@ -4,7 +4,8 @@ Changelog
 0.3.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Migrated to uv (pyproject.toml), Python 3 and pika 1.x.
+  [chris-adam]
 
 
 0.3.0 (2019-12-03)

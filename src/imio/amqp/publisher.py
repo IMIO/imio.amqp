@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from imio.amqp.base import AMQPConnector
-from imio.amqp.event import PublisherReadyEvent
 from imio.amqp.event import notify
+from imio.amqp.event import PublisherReadyEvent
 from imio.amqp.exception import PublishException
 
-import cPickle
+import pickle
 import pika
 import time
 
@@ -95,7 +95,8 @@ class BasePublisher(AMQPConnector):
         routing_key = self.get_routing_key(message)
         if routing_key not in self.routing_keys:
             raise PublishException("Unknown routing key {0}".format(routing_key))
-        body = cPickle.dumps(self.transform_message(message))
+        # ponytail: protocol 2 while Python 2 consumers exist, drop it once they're all on Python 3
+        body = pickle.dumps(self.transform_message(message), protocol=2)
         self._message_number += 1
         self._published_messages[self._message_number] = message
         self._channel.basic_publish(
@@ -122,10 +123,10 @@ class BasePublisher(AMQPConnector):
         if self._closing is True:
             return
         if len(self._messages) == 0:
-            self._connection.add_timeout(self.batch_interval, self._add_messages)
+            self._connection.ioloop.call_later(self.batch_interval, self._add_messages)
             return
         if self.publish_interval is not None:
-            self._connection.add_timeout(self.publish_interval, self._publish)
+            self._connection.ioloop.call_later(self.publish_interval, self._publish)
         else:
             time.sleep(0.1)
             self._publish()
@@ -134,11 +135,9 @@ class BasePublisher(AMQPConnector):
         """Stop the publishing process"""
         self._log("Stopping publisher")
         self._closing = True
-        if self._channel.is_open:
-            self.close_channel()
+        self.close_channel()
+        # on_connection_closed stops the ioloop once RabbitMQ confirms the close
         self.close_connection()
-        # Allow the publisher to cleanly disconnect from RabbitMQ
-        self._connection.ioloop.start()
         self._log("Publisher stopped")
 
     def on_bind(self, response_frame):
@@ -156,10 +155,14 @@ class BasePublisher(AMQPConnector):
         confirmation_type = method_frame.method.NAME.split(".")[1].lower()
         if confirmation_type == "ack":
             delivery_tag = method_frame.method.delivery_tag
-            self._log("Published message #%d" % delivery_tag)
-            message = self._published_messages.get(delivery_tag)
-            self.mark_message(message)
-            del self._published_messages[delivery_tag]
+            # RabbitMQ can confirm every message up to delivery_tag at once
+            if method_frame.method.multiple:
+                tags = [t for t in self._published_messages if t <= delivery_tag]
+            else:
+                tags = [delivery_tag]
+            for tag in tags:
+                self._log("Published message #%d" % tag)
+                self.mark_message(self._published_messages.pop(tag))
         elif confirmation_type == "nack":
             self._log("Unacknowledged message #%d" % self._message_number)
 

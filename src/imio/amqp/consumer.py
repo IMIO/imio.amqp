@@ -4,7 +4,7 @@ from imio.amqp.base import AMQPConnector
 from imio.amqp.event import ConsumerReadyEvent
 from imio.amqp.event import notify
 
-import cPickle
+import pickle
 import pika
 
 
@@ -17,7 +17,7 @@ class BaseConsumer(AMQPConnector):
         """Begin the consuming of messages"""
         self._log("Begin the consuming of messages")
         self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
-        self._consumer_tag = self._channel.basic_consume(self.on_message, self.queue)
+        self._consumer_tag = self._channel.basic_consume(self.queue, self.on_message)
 
     def on_consumer_cancelled(self, method_frame):
         """Invoked by pika when RabbitMQ sends a Basic.Cancel for a consumer
@@ -37,7 +37,7 @@ class BaseConsumer(AMQPConnector):
             )
         )
         try:
-            self.treat_message(cPickle.loads(body))
+            self.treat_message(pickle.loads(body))
             self.acknowledge_message(basic_deliver.delivery_tag)
         except Exception as e:
             self._log(
@@ -53,9 +53,9 @@ class BaseConsumer(AMQPConnector):
         """Stop consuming messages"""
         self._log("Stopping consumer")
         self._closing = True
-        if self._channel.is_open:
+        if self._channel and self._channel.is_open:
+            self._channel.basic_cancel(self._consumer_tag)
             self.close_channel()
-            self._channel.basic_cancel(consumer_tag=self._consumer_tag)
         # Allow the consumer to cleanly disconnect from RabbitMQ
         self._log("Consumer stopped")
 
@@ -79,9 +79,11 @@ class BaseSingleMessageConsumer(BaseConsumer):
         self._log("Connecting to {0!s}".format(self._url))
         self._connection = self.connection_cls(pika.URLParameters(self._url))
         self._channel = self._connection.channel()
-        parameters = {"exchange": self.exchange, "durable": self.exchange_durable}
-        parameters[self.keywords("exchange_type")] = self.exchange_type
-        self._channel.exchange_declare(**parameters)
+        self._channel.exchange_declare(
+            exchange=self.exchange,
+            exchange_type=self.exchange_type,
+            durable=self.exchange_durable,
+        )
         self._channel.queue_declare(
             queue=self.queue,
             durable=self.queue_durable,
@@ -103,5 +105,5 @@ class BaseSingleMessageConsumer(BaseConsumer):
 
     def stop(self):
         self._log("Stopping")
-        self._channel.basic_cancel()
+        self._connection.close()
         self._log("Stopped")
