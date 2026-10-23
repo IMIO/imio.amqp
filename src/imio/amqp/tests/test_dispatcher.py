@@ -58,8 +58,8 @@ def after_connection_open_publish(event):
 class TestBaseDispatcher(unittest.TestCase):
     def setUp(self):
         self._amqp = RabbitMQManager()
-        self._amqp.declare_exchange("imio.amqp.test", "direct", durable="true")
-        self._amqp.declare_queue("imio.amqp.conqueue", durable="true")
+        self._amqp.declare_exchange("imio.amqp.test", "direct", durable=True)
+        self._amqp.declare_queue("imio.amqp.conqueue", durable=True)
         self._amqp.declare_bind(
             "imio.amqp.test", "imio.amqp.conqueue", routing_key="key"
         )

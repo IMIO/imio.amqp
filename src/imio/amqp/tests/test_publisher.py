@@ -45,7 +45,7 @@ def after_connection_open(event):
 class TestBasePublisher(unittest.TestCase):
     def setUp(self):
         self._amqp = RabbitMQManager()
-        self._amqp.declare_exchange("imio.amqp.test", "direct", durable="true")
+        self._amqp.declare_exchange("imio.amqp.test", "direct", durable=True)
 
         connection = (
             "amqp://guest:guest@127.0.0.1:5672/%2F?"
@@ -64,8 +64,8 @@ class TestBasePublisher(unittest.TestCase):
         self._publisher.setup_queue("imio.amqp.pub1queue", "AA")
         self._publisher.setup_queue("imio.amqp.pub2queue", "BB")
         self._publisher.start()
-        self.assertIn("imio.amqp.pub1queue", self._amqp.queues)
-        self.assertIn("imio.amqp.pub2queue", self._amqp.queues)
+        self.assertTrue(self._amqp.queue_exists("imio.amqp.pub1queue"))
+        self.assertTrue(self._amqp.queue_exists("imio.amqp.pub2queue"))
 
     def test_single_publisher(self):
         self._publisher.setup_queue("imio.amqp.pub1queue", "AA")
@@ -94,7 +94,7 @@ class TestBasePublisher(unittest.TestCase):
 class TestBaseSingleMessagePublisher(unittest.TestCase):
     def setUp(self):
         self._amqp = RabbitMQManager()
-        self._amqp.declare_exchange("imio.amqp.test", "direct", durable="true")
+        self._amqp.declare_exchange("imio.amqp.test", "direct", durable=True)
 
         connection = (
             "amqp://guest:guest@127.0.0.1:5672/%2F?"
