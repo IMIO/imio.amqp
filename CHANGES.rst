@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.4.0 (unreleased)
+0.4.0 (2026-10-23)
 ------------------
 
 - Migrated to uv (pyproject.toml), Python 3 and pika 1.x.
